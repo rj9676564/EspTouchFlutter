@@ -4,23 +4,43 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('esptouch_flutter');
-
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    channel.setMockMethodCallHandler((MethodCall methodCall) async {
-      return '42';
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      MethodCall methodCall,
+    ) async {
+      return <String, dynamic>{'success': true, 'cancel': false};
     });
   });
 
   tearDown(() {
-    channel.setMockMethodCallHandler(null);
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(
-        await EsptouchFlutter.connectWifi("", "", "",
-            devCount: "", modelGroup: true),
-        '42');
+  test('connectWifi', () async {
+    final EsptouchConnectResult result = await EsptouchFlutter.connectWifi(
+      "",
+      "",
+      "",
+      devCount: "",
+      modelGroup: true,
+    );
+
+    expect(result.success, isTrue);
+    expect(result.cancel, isFalse);
+    expect(result.toMap(), <String, bool>{'success': true, 'cancel': false});
+  });
+
+  test('connectWifiMap', () async {
+    final Map<String, bool> result = await EsptouchFlutter.connectWifiMap(
+      "",
+      "",
+      "",
+      devCount: "",
+      modelGroup: true,
+    );
+
+    expect(result, <String, bool>{'success': true, 'cancel': false});
   });
 }

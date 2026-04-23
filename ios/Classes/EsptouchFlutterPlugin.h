@@ -8,6 +8,7 @@
 @interface EsptouchFlutterPlugin : NSObject<FlutterPlugin,ESPTouchDelegate>
 @property (nonatomic, strong)NSDictionary *netInfo;
 @property (nonatomic, strong) NSCondition *_condition;
+@property (nonatomic, strong) dispatch_queue_t esptouchQueue;
 // to cancel ESPTouchTask when
 @property (atomic, strong) ESPTouchTask *_esptouchTask;
 @end

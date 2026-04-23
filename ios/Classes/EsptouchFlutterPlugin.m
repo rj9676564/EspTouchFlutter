@@ -18,8 +18,12 @@
   
 }
 -(instancetype)init{
-    self._condition = [[NSCondition alloc]init];
-    return [super init];
+    self = [super init];
+    if (self) {
+        self._condition = [[NSCondition alloc]init];
+        self.esptouchQueue = dispatch_queue_create("com.juhesaas.esptouch_flutter.connect", DISPATCH_QUEUE_SERIAL);
+    }
+    return self;
 }
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
   if([@"getWifiInfo" isEqualToString:call.method]){
@@ -30,7 +34,7 @@
       result(wifiDic);
   } else if([@"cancelConnect" isEqualToString:call.method]){
       if(self._esptouchTask!=nil){
-          [self._esptouchTask setIsCancelled:YES];
+          [self._esptouchTask interrupt];
       }
       result(@(YES));
   } else if([@"connectWifi" isEqualToString:call.method]){
@@ -38,17 +42,24 @@
       NSString* mSsid = dic[@"mSsid"];
       NSString* pwd = dic[@"pwd"];
       NSString* mBssid = dic[@"mBssid"];
-      NSString* devCountStr = dic[@"devCountStr"];
+      NSString* devCountStr = dic[@"devCount"];
       if(devCountStr==nil){
           devCountStr=@"1";
       }
-      BOOL modeGroup = dic[@"modelGroup"];
-      
-      NSArray* results = [self executeForResultsWithSsid:mSsid bssid:mBssid password:pwd taskCount:[devCountStr intValue] broadcast:modeGroup];
-      ESPTouchResult *espResult=  results[0];
-      NSDictionary * dic2 = @{@"success":@(espResult.isSuc),@"cancel":@(espResult.isCancelled)};
-      result(dic2);
-      NSLog(@"==skldfjklj === ");
+      BOOL modeGroup = [dic[@"modelGroup"] boolValue];
+
+      // 配网任务会同步等待 UDP 结果，放到后台串行队列避免阻塞 Flutter 主线程。
+      dispatch_async(self.esptouchQueue, ^{
+          NSArray* results = [self executeForResultsWithSsid:mSsid bssid:mBssid password:pwd taskCount:[devCountStr intValue] broadcast:modeGroup];
+          ESPTouchResult *espResult = results.count > 0 ? results[0] : nil;
+          NSDictionary *dic2 = @{
+              @"success": @(espResult != nil && espResult.isSuc),
+              @"cancel": @(espResult != nil && espResult.isCancelled)
+          };
+          dispatch_async(dispatch_get_main_queue(), ^{
+              result(dic2);
+          });
+      });
   } else {
     result(FlutterMethodNotImplemented);
   }
@@ -71,33 +82,12 @@
     [self._esptouchTask setEsptouchDelegate:self];
     [self._esptouchTask setPackageBroadcast:broadcast];
     [self._condition unlock];
-//    ESPTouchResult *ESPTR = self._esptouchTask.executeForResult;
     NSArray * esptouchResults = [self._esptouchTask executeForResults:taskCount];
     NSLog(@"ESPViewController executeForResult() result is: %@",esptouchResults);
     return esptouchResults;
 }
--(void) dismissAlert:(UIAlertView *)alertView
-{
-    [alertView dismissWithClickedButtonIndex:[alertView cancelButtonIndex] animated:YES];
-}
-
--(void) showAlertWithResult: (ESPTouchResult *) result
-{
-    NSString *title = nil;
-    NSString *message = [NSString stringWithFormat:@"%@ %@" , result.bssid, NSLocalizedString(@"EspTouch-result-one", nil)];
-    NSTimeInterval dismissSeconds = 3.5;
-    UIAlertView *alertView = [[UIAlertView alloc]initWithTitle:title message:message delegate:nil cancelButtonTitle:nil otherButtonTitles:nil];
-    [alertView show];
-    [self performSelector:@selector(dismissAlert:) withObject:alertView afterDelay:dismissSeconds];
-}
-
 -(void) onEsptouchResultAddedWithResult: (ESPTouchResult *) result
 {
     NSLog(@"EspTouchDelegateImpl onEsptouchResultAddedWithResult bssid: %@", result.bssid);
-    // dispatch_async(dispatch_get_main_queue(), ^{
-    //     [self showAlertWithResult:result];
-    // });
-    // NSString *message = [NSString stringWithFormat:@"%@ %@" , result.bssid, NSLocalizedString(@"EspTouch-result-one", nil)];
-    // [[NSNotificationCenter defaultCenter] postNotificationName:@"deviceConfigResult" object:message];
 }
 @end
