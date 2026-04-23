@@ -11,3 +11,6 @@ example/.idea/*
 example/android/*
 example/build/*
 example/ios/Pods/*
+
+# FVM Version Cache
+.fvm/
