@@ -51,10 +51,27 @@
       // 配网任务会同步等待 UDP 结果，放到后台串行队列避免阻塞 Flutter 主线程。
       dispatch_async(self.esptouchQueue, ^{
           NSArray* results = [self executeForResultsWithSsid:mSsid bssid:mBssid password:pwd taskCount:[devCountStr intValue] broadcast:modeGroup];
-          ESPTouchResult *espResult = results.count > 0 ? results[0] : nil;
+          ESPTouchResult *espResult = nil;
+          BOOL success = NO;
+          BOOL cancelled = NO;
+          for (id resultItem in results) {
+              if (![resultItem isKindOfClass:[ESPTouchResult class]]) {
+                  continue;
+              }
+              ESPTouchResult *currentResult = (ESPTouchResult *)resultItem;
+              if (currentResult.isSuc) {
+                  espResult = currentResult;
+                  success = YES;
+                  break;
+              }
+              if (espResult == nil) {
+                  espResult = currentResult;
+              }
+              cancelled = cancelled || currentResult.isCancelled;
+          }
           NSDictionary *dic2 = @{
-              @"success": @(espResult != nil && espResult.isSuc),
-              @"cancel": @(espResult != nil && espResult.isCancelled)
+              @"success": @(success),
+              @"cancel": @(!success && cancelled)
           };
           dispatch_async(dispatch_get_main_queue(), ^{
               result(dic2);
