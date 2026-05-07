@@ -26,7 +26,7 @@ class EsptouchConnectResult {
   }
 }
 
-class EsptouchFlutter {
+class FlutterEsptouch {
   static const MethodChannel _channel = MethodChannel('esptouch_flutter');
 
   static Future<EsptouchConnectResult> connectWifi(

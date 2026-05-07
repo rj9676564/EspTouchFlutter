@@ -1,9 +1,9 @@
 # EspTouchFlutter
 乐刷wifi配网 flutter
 =======
-# esptouch_flutter
+# flutter_esptouch
 
-esptouch_flutter
+flutter_esptouch
 
 ## Getting Started
 

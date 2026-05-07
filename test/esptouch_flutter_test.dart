@@ -19,7 +19,7 @@ void main() {
   });
 
   test('connectWifi', () async {
-    final EsptouchConnectResult result = await EsptouchFlutter.connectWifi(
+    final EsptouchConnectResult result = await FlutterEsptouch.connectWifi(
       "",
       "",
       "",
@@ -33,7 +33,7 @@ void main() {
   });
 
   test('connectWifiMap', () async {
-    final Map<String, bool> result = await EsptouchFlutter.connectWifiMap(
+    final Map<String, bool> result = await FlutterEsptouch.connectWifiMap(
       "",
       "",
       "",
